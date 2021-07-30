@@ -1,13 +1,17 @@
 import React, { useState, useEffect } from 'react'
+import personService from './services/person.js'
+import './index.css'
 
 const App = () => {
-  const [ persons, setPersons] = useState([
-    { name: 'Arto Hellas', number: '040-123456' },
-    { name: 'Ada Lovelace', number: '39-44-5323523' },
-    { name: 'Dan Abramov', number: '12-43-234345' },
-    { name: 'Mary Poppendieck', number: '39-23-6423122' }
-  ])
+  const DEFAULT_NAME = ''
+  const DEFAULT_NUMBER = ''
 
+  const [ newName, setNewName ] = useState(DEFAULT_NAME)
+  const [ newNumber, setNewNumber ] = useState(DEFAULT_NUMBER)
+  const [ msg, setMsg ] = useState(null)
+  const [ errMsg, setErrMsg ] = useState(null)
+
+  const [ persons, setPersons] = useState([])
   const [ shownPersons, setShownPersons ] = useState(persons)
   const [ searchFilter, setSearchFilter ] = useState('')
 
@@ -17,11 +21,18 @@ const App = () => {
     ))
   }, [searchFilter, persons])
 
-  const DEFAULT_NAME = ''
-  const DEFAULT_NUMBER = ''
+  useEffect(() => {
+    personService
+      .get()
+      .then(persons => setPersons(persons))
+  }, [])
 
-  const [ newName, setNewName ] = useState(DEFAULT_NAME)
-  const [ newNumber, setNewNumber ] = useState(DEFAULT_NUMBER)
+  const addNotif = (msg, setter) => {
+    setter(msg)
+    setTimeout(() => {
+        setter(null)
+    }, 5000)
+  }
 
   const addPerson = (event) => {
     event.preventDefault()
@@ -31,13 +42,55 @@ const App = () => {
       number: newNumber
     }
 
-    if (persons.every((p) => p.name !== person.name))
-      setPersons(persons.concat(person))
-    else
-      alert(`${newName} is already added to phonebook`)
+    const duplicate = persons.find(e => e.name === person.name)
 
-    setNewName(DEFAULT_NAME)
-    setNewNumber(DEFAULT_NUMBER)
+    if (duplicate !== undefined) {
+      person.id = duplicate.id
+      const confirmation = `${person.name} already in phonebook, replace number?`
+      if (window.confirm(confirmation)) {
+        personService
+          .put(person)
+          .then(newPerson => {
+            addNotif(`Updated number of ${newPerson.name}`, setMsg)
+            setPersons(
+              persons
+                .filter(p => p.name !== person.name)
+                .concat(newPerson)
+            )
+            setNewName(DEFAULT_NAME)
+            setNewNumber(DEFAULT_NUMBER)
+          })
+          .catch(err => {
+            addNotif(`${person.name} has been already deleted`, setErrMsg)
+          })
+      } else {
+        setNewName(DEFAULT_NAME)
+        setNewNumber(DEFAULT_NUMBER)
+      }
+    } else {
+      personService
+        .post(person)
+        .then(newPerson => {
+          addNotif(`Added ${newPerson.name}`, setMsg)
+          setPersons(persons.concat(newPerson))
+          setNewName(DEFAULT_NAME)
+          setNewNumber(DEFAULT_NUMBER)
+        })
+    }
+  }
+
+  const deletePerson = (person) => () => {
+    if (window.confirm(`Delete ${person.name}?`)) {
+      personService
+        .del(person.id)
+        .then(resp => {
+          addNotif(`Deleted ${person.name}`, setMsg)
+          setPersons(persons.filter(other => other.id !== person.id))
+        })
+        .catch(err => {
+          addNotif(`${person.name} has been already deleted`, setErrMsg)
+        })
+    }
   }
 
   const formData = {
@@ -56,12 +109,31 @@ const App = () => {
   return (
     <div>
       <h1>Phonebook</h1>
-      <SearchField data={searchData}/>
-      <PersonForm data={formData}/>
-      <Persons persons={shownPersons}/>
+      <Notification msg={msg} error={errMsg}/>
+      <SearchField data={searchData} />
+      <PersonForm data={formData} />
+      <Persons persons={shownPersons} del={deletePerson} />
     </div>
   )
 
+}
+
+const Notification = ({ msg, error }) => {
+  if (msg !== null) {
+  return (
+    <div className="notif">
+      {msg}
+    </div>
+  )
+  } else if (error !== null) {
+    return (
+      <div className="error">
+        {error}
+      </div>
+    )
+  } else {
+    return null
+  }
 }
 
 const SearchField = ({ data }) => {
@@ -102,18 +174,21 @@ const PersonForm = ({ data }) => {
   )
 }
 
-const Persons = ({ persons }) => {
+const Persons = ({ persons, del }) => {
   return (
     <>
       <h2>Numbers</h2>
-      {persons.map(person => <Person key={person.name} person={person}/>)}
+      {persons.map(person => <Person key={person.id} person={person} del={del}/>)}
     </>
   )
 }
 
-const Person = ({ person }) => {
+const Person = ({ person, del }) => {
   return (
-    <p>{person.name} {person.number}</p>
+    <p>
+      {person.name} {person.number}
+      <button onClick={del(person)}>delete</button>
+    </p>
   )
 }
 
