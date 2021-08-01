@@ -16,7 +16,7 @@ const personSchema = new mongoose.Schema({
 
 const Person = mongoose.model('Person', personSchema)
 
-if (process.argv.length == 2) {
+if (process.argv.length === 2) {
   Person.find({})
     .then(result => {
       console.log('phonebook:')
@@ -36,7 +36,7 @@ if (process.argv.length == 2) {
       mongoose.connection.close()
     })
 } else {
-  console.log("missing arguments")
+  console.log('missing arguments')
   mongoose.connection.close()
 }
 

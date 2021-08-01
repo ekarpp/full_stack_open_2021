@@ -15,7 +15,7 @@ const del = (id) => {
 }
 
 const put = (person) => {
-  return axios.put(`${BASE_URL}/person.id`, person).then(resp => resp.data)
+  return axios.put(`${BASE_URL}/${person.id}`, person).then(resp => resp.data)
 }
 
 export default { get , post, del, put }

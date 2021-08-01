@@ -81,6 +81,7 @@ const App = () => {
           setNewName(DEFAULT_NAME)
           setNewNumber(DEFAULT_NUMBER)
         })
+        .catch(err => addNotif(err.response.data.error, setErrMsg))
     }
   }
 
