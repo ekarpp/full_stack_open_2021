@@ -4,10 +4,19 @@ const app = require('../app.js')
 const api = supertest(app)
 const helper = require('./test_helper.js')
 const Blog = require('../models/blog.js')
+const User = require('../models/user.js')
 
 beforeEach(async () => {
+  await User.deleteMany({})
+  const user = new User(helper.user)
+  const savedUser = await user.save()
+
   await Blog.deleteMany({})
-  await Blog.insertMany(helper.initialBlogs)
+  const blogs = await helper.initialBlogs.map(b => {
+    return {...b, user: savedUser._id}
+  })
+
+  await Blog.insertMany(blogs)
 })
 
 describe('GET /api/blogs', () => {
@@ -39,8 +48,15 @@ describe('POST /api/blogs', () => {
       likes: -1
     }
 
+    const login = await api
+          .post('/api/login')
+          .send(helper.userLogin)
+          .expect(200)
+    const token = `bearer ${login.body.token}`
+
     await api
       .post('/api/blogs')
+      .set('Authorization', token)
       .send(newBlog)
       .expect(201)
       .expect('Content-Type', /application\/json/)
@@ -57,11 +73,18 @@ describe('POST /api/blogs', () => {
       url: 'localhost'
     }
 
+    const login = await api
+          .post('/api/login')
+          .send(helper.userLogin)
+          .expect(200)
+    const token = `bearer ${login.body.token}`
+
     const newBlog = await api
-      .post('/api/blogs')
-      .send(blog)
-      .expect(201)
-      .expect('Content-Type', /application\/json/)
+          .post('/api/blogs')
+          .set('Authorization', token)
+          .send(blog)
+          .expect(201)
+          .expect('Content-Type', /application\/json/)
 
     expect(newBlog.body.likes).toBe(0)
   })
@@ -72,18 +95,47 @@ describe('POST /api/blogs', () => {
       authror: 'FAIL'
     }
 
+    const login = await api
+          .post('/api/login')
+          .send(helper.userLogin)
+          .expect(200)
+    const token = `bearer ${login.body.token}`
+
     await api
       .post('/api/blogs')
+      .set('Authorization', token)
       .send(malformedBlog)
       .expect(400)
+  })
+
+  test('401 without authorization header', async () => {
+    const blog = {
+      title: 'test',
+      author: 'no one',
+      url: 'localhost',
+      likes: 10
+    }
+
+    await api
+      .post('/api/blogs')
+      .send(blog)
+      .expect(401)
   })
 })
 
 describe('DELETE /api/blogs', () => {
   test('should delete', async () => {
     const blogs = await Blog.find({})
+
+    const login = await api
+          .post('/api/login')
+          .send(helper.userLogin)
+          .expect(200)
+    const token = `bearer ${login.body.token}`
+
     await api
       .delete(`/api/blogs/${blogs[0].id}`)
+      .set('Authorization', token)
       .expect(204)
 
     const response = await api.get('/api/blogs')
@@ -93,8 +145,16 @@ describe('DELETE /api/blogs', () => {
 
   test('should 404 on wrong id', async () => {
     const id = await helper.invalidId()
+
+    const login = await api
+          .post('/api/login')
+          .send(helper.userLogin)
+          .expect(200)
+    const token = `bearer ${login.body.token}`
+
     await api
       .delete(`/api/blogs/${id}`)
+      .set('Authorization', token)
       .expect(404)
   })
 })
@@ -105,8 +165,15 @@ describe('PUT /api/blogs', () => {
     let newBlog = blogs[0].toJSON()
     newBlog.likes = -1
 
+    const login = await api
+          .post('/api/login')
+          .send(helper.userLogin)
+          .expect(200)
+    const token = `bearer ${login.body.token}`
+
     const updatedBlog = await api
           .put(`/api/blogs/${newBlog.id}`)
+          .set('Authorization', token)
           .send(newBlog)
           .expect(200)
           .expect('Content-Type', /application\/json/)

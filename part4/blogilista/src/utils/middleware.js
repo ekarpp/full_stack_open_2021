@@ -1,3 +1,4 @@
+const jwt = require('jsonwebtoken')
 const logger = require('./logger.js')
 
 const requestLogger = (request, response, next) => {
@@ -13,18 +14,44 @@ const unknownEndpoint = (request, response) => {
 }
 
 const errorHandler = (error, request, response, next) => {
-  logger.error(error.name, error.message)
   if (error.name === 'ValidationError')
     return response.status(400).json({ error: error.message })
 
   if (error.name === 'CastError')
     return response.status(400).json({ error: 'malformatted id' })
 
+  if (error.name === 'JsonWebTokenError')
+    return response.status(401).json({ error: 'invalid token' })
+
+  logger.error(error.name, error.message)
   next(error)
+}
+
+const tokenExtractor = (req, res, next) => {
+  const authorization = req.get('authorization')
+  if (authorization && authorization.toLowerCase().startsWith('bearer '))
+    req.token = authorization.substring(7)
+  else
+    req.token = null
+
+  next()
+}
+
+const userExtractor = (req, res, next) => {
+  if (req.method === 'GET')
+    return next()
+
+  const decodedToken = jwt.verify(req.token, process.env.SECRET)
+  if (!req.token || !decodedToken.id)
+    return res.status(401).json({ error: 'missing token or invalid' })
+  req.user = decodedToken.id
+  next()
 }
 
 module.exports = {
   requestLogger,
   unknownEndpoint,
-  errorHandler
+  errorHandler,
+  tokenExtractor,
+  userExtractor
 }
