@@ -55,9 +55,6 @@ blogRouter.put('/:id', async (req, res) => {
   if (!blog)
     return res.status(404).end()
 
-  if (blog.user.toString() !== req.user)
-    return res.status(401).json({ error: 'not your blog' })
-
   const savedBlog = await Blog.findByIdAndUpdate(
     req.params.id, updatedBlog, { new: true }
   )

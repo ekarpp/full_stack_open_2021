@@ -38,7 +38,7 @@ const tokenExtractor = (req, res, next) => {
 }
 
 const userExtractor = (req, res, next) => {
-  if (req.method === 'GET')
+  if (req.method === 'GET' || req.method === 'PUT')
     return next()
 
   const decodedToken = jwt.verify(req.token, process.env.SECRET)
