@@ -12,7 +12,12 @@ const Blog = ({ blog, likeBlog, usersBlog, deleteBlog }) => {
   }
 
   const renderDelete = () => (
-    <button onClick={deleteBlog(blog)}>delete</button>
+    <button
+      onClick={deleteBlog(blog)}
+      id={'deleteBlog-' + blog.title.replaceAll(' ', '-')}
+    >
+      delete
+    </button>
   )
 
   const renderInfo = () => (
@@ -20,7 +25,13 @@ const Blog = ({ blog, likeBlog, usersBlog, deleteBlog }) => {
       <br></br>
       {blog.url}
       <br></br>
-      likes {blog.likes} <button onClick={likeBlog(blog)}>like</button>
+      likes {blog.likes}
+      <button
+        onClick={likeBlog(blog)}
+        id={'likeBlog-' + blog.title.replaceAll(' ', '-')}
+      >
+        like
+      </button>
       <br></br>
       {blog.user.name}
       {usersBlog && renderDelete()}
@@ -31,7 +42,10 @@ const Blog = ({ blog, likeBlog, usersBlog, deleteBlog }) => {
   return (
     <div style={blogStyle}>
       "{blog.title}" by "{blog.author}"
-      <button onClick={() => setShowInfo(!showInfo)}>
+      <button
+        id={'toggleBlog-' + blog.title.replaceAll(' ', '-')}
+        onClick={() => setShowInfo(!showInfo)}
+      >
         {
           showInfo
           ? 'hide'
