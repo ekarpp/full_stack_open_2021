@@ -6,6 +6,8 @@ const helper = require('./test_helper.js')
 const Blog = require('../models/blog.js')
 const User = require('../models/user.js')
 
+let token
+
 beforeEach(async () => {
   await User.deleteMany({})
   const user = new User(helper.user)
@@ -17,6 +19,12 @@ beforeEach(async () => {
   })
 
   await Blog.insertMany(blogs)
+
+  const login = await api
+        .post('/api/login')
+        .send(helper.userLogin)
+        .expect(200)
+  token = `bearer ${login.body.token}`
 })
 
 describe('GET /api/blogs', () => {
@@ -48,12 +56,6 @@ describe('POST /api/blogs', () => {
       likes: -1
     }
 
-    const login = await api
-          .post('/api/login')
-          .send(helper.userLogin)
-          .expect(200)
-    const token = `bearer ${login.body.token}`
-
     await api
       .post('/api/blogs')
       .set('Authorization', token)
@@ -73,12 +75,6 @@ describe('POST /api/blogs', () => {
       url: 'localhost'
     }
 
-    const login = await api
-          .post('/api/login')
-          .send(helper.userLogin)
-          .expect(200)
-    const token = `bearer ${login.body.token}`
-
     const newBlog = await api
           .post('/api/blogs')
           .set('Authorization', token)
@@ -94,12 +90,6 @@ describe('POST /api/blogs', () => {
       title: 'FAIL',
       authror: 'FAIL'
     }
-
-    const login = await api
-          .post('/api/login')
-          .send(helper.userLogin)
-          .expect(200)
-    const token = `bearer ${login.body.token}`
 
     await api
       .post('/api/blogs')
@@ -127,12 +117,6 @@ describe('DELETE /api/blogs', () => {
   test('should delete', async () => {
     const blogs = await Blog.find({})
 
-    const login = await api
-          .post('/api/login')
-          .send(helper.userLogin)
-          .expect(200)
-    const token = `bearer ${login.body.token}`
-
     await api
       .delete(`/api/blogs/${blogs[0].id}`)
       .set('Authorization', token)
@@ -146,12 +130,6 @@ describe('DELETE /api/blogs', () => {
   test('should 404 on wrong id', async () => {
     const id = await helper.invalidId()
 
-    const login = await api
-          .post('/api/login')
-          .send(helper.userLogin)
-          .expect(200)
-    const token = `bearer ${login.body.token}`
-
     await api
       .delete(`/api/blogs/${id}`)
       .set('Authorization', token)
@@ -164,12 +142,6 @@ describe('PUT /api/blogs', () => {
     const blogs = await Blog.find({})
     let newBlog = blogs[0].toJSON()
     newBlog.likes = -1
-
-    const login = await api
-          .post('/api/login')
-          .send(helper.userLogin)
-          .expect(200)
-    const token = `bearer ${login.body.token}`
 
     const updatedBlog = await api
           .put(`/api/blogs/${newBlog.id}`)
