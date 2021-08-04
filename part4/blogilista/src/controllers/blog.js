@@ -17,11 +17,13 @@ blogRouter.post('/', async (req, res) => {
   }
 
   const blog = new Blog(data)
-  const savedBlog = await blog.save()
+  let savedBlog = await blog.save()
 
   const user = await User.findById(req.user)
   user.blogs = user.blogs.concat(savedBlog._id)
   await user.save()
+
+  savedBlog.user = user
 
   res.status(201).json(savedBlog)
 })
@@ -37,6 +39,11 @@ blogRouter.delete('/:id', async (req, res) => {
     return res.status(401).json({ error: 'not your blog' })
 
   await Blog.findByIdAndRemove(req.params.id)
+  res.status(204).end()
+})
+
+blogRouter.get('/clear', async (req, res) => {
+  await Blog.remove({})
   res.status(204).end()
 })
 
