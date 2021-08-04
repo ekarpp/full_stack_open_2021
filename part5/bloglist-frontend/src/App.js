@@ -22,10 +22,9 @@ const App = () => {
 
   const blogSortBy = (e1, e2) => e1.likes < e2.likes
 
-  useEffect(() => {
-    blogService.getAll().then(blogs =>
-                              setBlogs( blogs.sort(blogSortBy) )
-                             )
+  useEffect(async () => {
+    const blogs = await blogService.getAll()
+    setBlogs( blogs.sort(blogSortBy) )
   }, [])
 
   useEffect(() => {
@@ -67,7 +66,8 @@ const App = () => {
   const likeBlog = blog => async () => {
     const copy = { ...blog }
     copy.likes += 1
-    copy.user = copy.user.id
+    copy.user = blog.user.id
+
     const updatedBlog = await blogService.update(copy)
     setBlogs(
       blogs
@@ -75,6 +75,7 @@ const App = () => {
         .concat(updatedBlog)
         .sort(blogSortBy)
     )
+
     addNotif(
       `liked blog "${blog.title}"`, setNotif
     )

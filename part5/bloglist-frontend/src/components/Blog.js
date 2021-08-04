@@ -1,7 +1,8 @@
-import React from 'react'
-import Togglable from './Togglable'
+import React, { useState } from 'react'
 
 const Blog = ({ blog, likeBlog, usersBlog, deleteBlog }) => {
+  const [ showInfo, setShowInfo ] = useState(false)
+
   const blogStyle = {
     paddingTop: 10,
     paddingLeft: 2,
@@ -14,19 +15,30 @@ const Blog = ({ blog, likeBlog, usersBlog, deleteBlog }) => {
     <button onClick={deleteBlog(blog)}>delete</button>
   )
 
+  const renderInfo = () => (
+    <>
+      <br></br>
+      {blog.url}
+      <br></br>
+      likes {blog.likes} <button onClick={likeBlog(blog)}>like</button>
+      <br></br>
+      {blog.user.name}
+      {usersBlog && renderDelete()}
+      <br></br>
+    </>
+  )
 
   return (
     <div style={blogStyle}>
       "{blog.title}" by "{blog.author}"
-      <Togglable buttonLabel="view">
-        {blog.url}
-        <br></br>
-        likes {blog.likes} <button onClick={likeBlog(blog)}>like</button>
-        <br></br>
-        {blog.user.name}
-        {usersBlog && renderDelete()}
-        <br></br>
-      </Togglable>
+      <button onClick={() => setShowInfo(!showInfo)}>
+        {
+          showInfo
+          ? 'hide'
+          : 'view'
+        }
+      </button>
+      {showInfo && renderInfo()}
     </div>
   )
 }
