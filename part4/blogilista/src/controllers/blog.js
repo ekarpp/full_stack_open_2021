@@ -38,12 +38,16 @@ blogRouter.delete('/:id', async (req, res) => {
   if (blog.user.toString() !== req.user)
     return res.status(401).json({ error: 'not your blog' })
 
+  const user = await User.findById(req.user)
   await Blog.findByIdAndRemove(req.params.id)
+  user.blogs = user.blogs.filter(b => b.id !== blog.id)
+
   res.status(204).end()
 })
 
 blogRouter.get('/clear', async (req, res) => {
   await Blog.remove({})
+  await User.updateMany({}, { blogs: [] })
   res.status(204).end()
 })
 
@@ -54,18 +58,18 @@ blogRouter.put('/:id', async (req, res) => {
     title: data.title,
     author: data.author,
     url: data.url,
-    likes: data.likes,
-    user: req.user
+    likes: data.likes
   }
 
   const blog = await Blog.findById(req.params.id)
   if (!blog)
     return res.status(404).end()
 
-  const savedBlog = await Blog.findByIdAndUpdate(
+  let savedBlog = await Blog.findByIdAndUpdate(
     req.params.id, updatedBlog, { new: true }
-  )
+  ).populate('user')
 
+  console.log(savedBlog)
   res.json(savedBlog)
 })
 
