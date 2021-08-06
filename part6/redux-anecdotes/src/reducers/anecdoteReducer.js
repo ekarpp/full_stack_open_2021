@@ -1,57 +1,54 @@
-const anecdotesAtStart = [
-  'If it hurts, do it more often',
-  'Adding manpower to a late software project makes it later!',
-  'The first 90 percent of the code accounts for the first 90 percent of the development time...The remaining 10 percent of the code accounts for the other 90 percent of the development time.',
-  'Any fool can write code that a computer can understand. Good programmers write code that humans can understand.',
-  'Premature optimization is the root of all evil.',
-  'Debugging is twice as hard as writing the code in the first place. Therefore, if you write the code as cleverly as possible, you are, by definition, not smart enough to debug it.'
-]
+import anecdoteService from '../services/anecdotes.js'
 
-const getId = () => Number((100000 * Math.random()).toFixed(0))
-
-const asObject = (anecdote) => {
-  return {
-    content: anecdote,
-    id: getId(),
-    votes: 0
+export const createAnecdote = (content) => {
+  return async dispatch => {
+    const anecdote = await anecdoteService.createNew(content)
+    dispatch({
+      type: 'ADD_ANECDOTE',
+      data: anecdote
+    })
   }
 }
 
-export const createAnecdote = (anecdote) => {
-  return {
-    type: 'ADD',
-    data: anecdote
+export const voteAnecdote = (anecdote) => {
+  return async dispatch => {
+    const updated = await anecdoteService.updateOne({
+      ...anecdote,
+      votes: anecdote.votes + 1
+    })
+
+    dispatch({
+      type: 'VOTE_ANECDOTE',
+      data: updated
+    })
   }
 }
 
-export const voteAnecdote = (id) => {
-  return {
-    type: 'VOTE',
-    data: id
+export const initializeAnecdotes = () => {
+  return async dispatch => {
+    const anecdotes = await anecdoteService.getAll()
+    dispatch({
+      type: 'INIT_ANECDOTES',
+      data: anecdotes
+    })
   }
 }
 
 const sortBy = (e1, e2) => e1.votes < e2.votes
-const initialState = anecdotesAtStart.map(asObject).sort(sortBy)
 
-const reducer = (state = initialState, action) => {
-
+const reducer = (state = [], action) => {
+  console.log(state)
+  console.log(action)
   switch (action.type) {
-  case 'VOTE':
-    const id = Number(action.data)
+  case 'VOTE_ANECDOTE':
     return state
-      .map(a => {
-      return id !== a.id
-        ? a
-        : {...a, votes: a.votes + 1}
-      })
+      .filter(a => a.id !== action.data.id)
+      .concat(action.data)
       .sort(sortBy)
-  case 'ADD':
-    return state.concat({
-      content: action.data,
-      id: getId(),
-      votes: 0
-    })
+  case 'ADD_ANECDOTE':
+    return state.concat(action.data)
+  case 'INIT_ANECDOTES':
+    return action.data
   default:
     return state
   }
